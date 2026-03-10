@@ -1,0 +1,45 @@
+{
+  "name": "@bitgen/sdk",
+  "version": "1.0.0",
+  "license": "MIT",
+  "author": "BITGEN",
+  "description": "Official Node.js SDK for the BITGEN API v3",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js",
+      "types": "./dist/types/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.esm.json && tsc -p tsconfig.cjs.json && tsc -p tsconfig.types.json",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "bitgen",
+    "crypto",
+    "sdk"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bitgenplatform/sdk.git"
+  },
+  "homepage": "https://github.com/bitgenplatform/sdk#readme",
+  "bugs": {
+    "url": "https://github.com/bitgenplatform/sdk/issues"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}
