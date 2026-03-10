@@ -1,11 +1,12 @@
 {
   "name": "@bitgen/sdk",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "license": "MIT",
   "author": "BITGEN",
   "description": "Official Node.js SDK for the BITGEN API v3",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
+  "type": "module",
   "types": "./dist/types/index.d.ts",
   "exports": {
     ".": {
@@ -20,7 +21,7 @@
     "CHANGELOG.md"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.esm.json && tsc -p tsconfig.cjs.json && tsc -p tsconfig.types.json",
+    "build": "tsc -p tsconfig.esm.json && tsc -p tsconfig.cjs.json && tsc -p tsconfig.types.json && echo '{\"type\":\"commonjs\"}' > dist/cjs/package.json",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
