@@ -3,6 +3,8 @@
 ### Changed
 - Sandbox URL updated from `api.btgn.dev` to `api.staging.btgn.dev`
 - Removed `dist/` from repository (built by CI on release)
+- Added `isSsl` config option (default `true`) for custom host mode
+- Localhost default port changed from `80` to `14303`
 
 ## [0.1.3] - 2026-03-11
 

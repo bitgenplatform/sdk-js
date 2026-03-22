@@ -23,9 +23,10 @@ export class HttpClient {
   constructor(config: BitgenConfig) {
     if (config.host) {
       const port = config.port ?? 80
-      this.baseUrl = `http://${config.host}:${port}`
+      const scheme = config.isSsl !== false ? 'https' : 'http'
+      this.baseUrl = `${scheme}://${config.host}:${port}`
     } else if (config.env === 'localhost') {
-      const port = config.port ?? 80
+      const port = config.port ?? 14303
       this.baseUrl = `http://localhost:${port}`
     } else {
       this.baseUrl = BASE_URLS[config.env ?? 'production']

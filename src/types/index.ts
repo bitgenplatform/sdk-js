@@ -8,6 +8,7 @@ export interface BitgenConfig {
   env?: BitgenEnv
   host?: string
   port?: number
+  isSsl?: boolean
 }
 
 // ─── Shared ───────────────────────────────────────────────────────────────────
