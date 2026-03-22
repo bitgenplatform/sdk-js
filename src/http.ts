@@ -2,7 +2,7 @@ import type { BitgenConfig } from './types/index.js'
 import { BitgenError } from './error.js'
 
 const BASE_URLS: Record<string, string> = {
-  sandbox: 'https://api.btgn.dev',
+  sandbox: 'https://api.staging.btgn.dev',
   production: 'https://api.bitgen.com',
 }
 

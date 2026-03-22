@@ -1,6 +1,6 @@
 # @bitgen/sdk
 
-Official Node.js SDK for the BITGEN Crypto-as-a-Service API v3.
+Official Node.js SDK for the BITGEN Crypto-as-a-Service API v3.1.x.
 
 ## Installation
 

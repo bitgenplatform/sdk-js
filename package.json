@@ -1,9 +1,9 @@
 {
   "name": "@bitgen/sdk",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "license": "private",
   "author": "BITGEN",
-  "description": "Official Node.js SDK for the BITGEN API v3",
+  "description": "Official Node.js SDK for the BITGEN API v3.1.x",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
   "type": "module",
