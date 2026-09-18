@@ -1,0 +1,63 @@
+{
+  "name": "@bitgen/sdk",
+  "version": "1.0.3",
+  "license": "UNLICENSED",
+  "author": "BITGEN",
+  "description": "Official Node.js SDK for the BITGEN API v4.0.x",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "type": "module",
+  "types": "./dist/esm/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/esm/index.d.ts",
+        "default": "./dist/esm/index.js"
+      },
+      "require": {
+        "types": "./dist/cjs/index.d.ts",
+        "default": "./dist/cjs/index.js"
+      }
+    }
+  },
+  "sideEffects": false,
+  "files": [
+    "dist",
+    "src",
+    "readme",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "prebuild": "node scripts/prebuild.js",
+    "build": "tsc -p tsconfig.esm.json && tsc -p tsconfig.cjs.json && echo '{\"type\":\"commonjs\"}' > dist/cjs/package.json",
+    "lint": "eslint .",
+    "pretest": "npm run build",
+    "test": "node --test",
+    "prepublishOnly": "npm run lint && npm test",
+    "version": "node scripts/prebuild.js && git add src/version.ts"
+  },
+  "keywords": [
+    "bitgen",
+    "crypto",
+    "sdk"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bitgenplatform/sdk-js.git"
+  },
+  "homepage": "https://github.com/bitgenplatform/sdk-js#readme",
+  "bugs": {
+    "url": "https://github.com/bitgenplatform/sdk-js/issues"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^20.19.43",
+    "eslint": "^10.10.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.70.0"
+  }
+}
