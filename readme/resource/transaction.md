@@ -4,6 +4,8 @@ The transaction journal is the unified, read-only record of the fiat and crypto 
 
 Examples use `client`, a configured `BitgenClient` ([Configuration](../configuration.md)).
 
+![The lifecycle of a transaction: the compliance analysis, the nominal path of an incoming and of an outgoing transaction, the hold, the freeze, the refusal and the seizure](../media/transaction-lifecycle.svg)
+
 ## Methods
 
 | Method | What it does | Returns |
@@ -13,7 +15,7 @@ Examples use `client`, a configured `BitgenClient` ([Configuration](../configura
 
 TypeScript types of this resource, exported by the package: `TransactionAlert`, `Transaction`, `TransactionListParams` — the constants `TransactionState`, `TransactionSource`, `TransactionDirection` (also types) — plus the shared `UserRef`, `UserSummary`, `OrganizationSummary`, `OrganizationHub`, `AssetInput`, `Page`.
 
-## list
+## List
 
 ```
 client.transaction.list(params?: TransactionListParams): Promise<Page<Transaction>>
@@ -48,7 +50,7 @@ for (const transaction of items) {
 
 Returns a page of `Transaction`.
 
-## get
+## Get
 
 ```
 client.transaction.get(transaction: string | Transaction): Promise<Transaction>
@@ -70,14 +72,14 @@ Returns a `Transaction`:
 | Field | Description |
 |---|---|
 | `uuid` | The transaction |
-| `state` | `TransactionState.ANALYZING`, `PENDING`, `COMPLETED`, `FROZEN`, `FAILED`, `TRANSFERING` or `SEIZED` |
+| `state` | `TransactionState.ANALYZING`, `PENDING`, `COMPLETED`, `FROZEN`, `FAILED`, `TRANSFERING` or `SEIZED` — the cycle is below the table |
 | `source` | `TransactionSource.BANK` (EUR) or `TransactionSource.CUSTODY` (crypto) |
 | `direction` | `TransactionDirection.IN` or `TransactionDirection.OUT` |
 | `asset` | The asset iso — `EUR` for bank transactions |
 | `amount` | The amount, in that asset (a number — for crypto, the exact amount is the string held by the custody wallet) |
 | `eurValue` | EUR value when recorded, or `null` |
 | `reference` | The reference, or `null` |
-| `credited` | Whether the customer's balance (EUR account or wallet) has been credited |
+| `credited` | For an incoming transaction: `true` once the EUR account or the wallet has actually been credited, right after `COMPLETED` |
 | `silent` | `true` for an internal leg (staking, sale) that is not an operation of the customer |
 | `data` | Additional context set by the platform (compliance details, internal flags) — varies with the transaction, not needed for an integration |
 | `createdAt`, `updatedAt` | Epoch seconds |
@@ -87,6 +89,8 @@ Returns a `Transaction`:
 | `alert` | The compliance alert attached to the transaction (`TransactionAlert`), or `null`: `uuid`, `state` (`OPEN`, `RESOLVED`, `DISMISSED`, `DECLARATED`, `CONFIRMED`), `severity` (`SUCCESS`, `WARNING`, `CRITICAL`), `type` (`KYT`, `KYC_EXPIRE`, `SUSPICIOUS_ACTIVITY`, `AML`, `SANCTIONS`), `description`, `confidence` (confidence of the analysis, 0–100), `recommendation` (suggested action), `factors` (elements that weighed in the analysis), `sources` (the observations analysed), `history` (state changes of the alert), `incidentKey` (groups the alerts of a same incident), `createdAt`, `updatedAt`, `user` (the customer), `assignee` (the compliance officer), `organization` |
 
 An unknown uuid or reference, or a transaction outside your organization, answers `404 unknown_transaction`.
+
+Every transaction is born `ANALYZING`, the compliance analysis — the internal legs too. A clean verdict sends an incoming transaction to `COMPLETED`, then the EUR account or the wallet is credited; an outgoing one to `TRANSFERING` — the wire or the on-chain send executes — then `COMPLETED` at its confirmation. An alert, or a crypto deposit on a frozen wallet, holds it in `PENDING`: an `alert` is attached and the compliance of your organization becomes the `assignee`. The compliance then freezes it (`PENDING` → `FROZEN`), validates it (`PENDING` or `FROZEN` → `COMPLETED` for an incoming transaction, `TRANSFERING` for an outgoing one; the alert is `RESOLVED`), refuses it (`PENDING` or `FROZEN` → `FAILED`) or seizes it (`FROZEN` → `SEIZED`); an execution that fails also ends `FAILED` (`TRANSFERING` → `FAILED`). `COMPLETED`, `FAILED` and `SEIZED` are terminal. A failed incoming transaction was never credited; a failed outgoing one releases its reserve or re-credits the wallet. Two exceptions appear in the list: a crypto deposit that failed on chain is recorded `FAILED` right away, and the return or the seizure of a refused or seized deposit is a separate outgoing transaction, born `TRANSFERING`. The internal legs (`silent`) go through the analysis like the others and send no event.
 
 ## Errors
 

@@ -14,7 +14,7 @@ Examples use `client`, a configured `BitgenClient` ([Configuration](../configura
 
 TypeScript types of this resource, exported by the package: `Apikey`, `ApikeyLog`, `ApikeyListParams` — the constant `ApikeyState` (also a type) — plus the shared `PageParams`.
 
-## list
+## List
 
 ```
 client.apikeys.list(params?: ApikeyListParams): Promise<Page<Apikey>>
@@ -37,7 +37,7 @@ for (const key of items) {
 
 Returns a page of `Apikey` ([get](#get)).
 
-## get
+## Get
 
 ```
 client.apikeys.get(apikey: string | Apikey): Promise<Apikey>
@@ -66,7 +66,7 @@ Returns an `Apikey`:
 
 An unknown uuid answers `404 unknown_apikey`. The raw key itself is never returned: it is shown once, when the key is created.
 
-## logs
+## Logs
 
 ```
 client.apikeys.logs(apikey: string | Apikey, params?: PageParams): Promise<Page<ApikeyLog>>

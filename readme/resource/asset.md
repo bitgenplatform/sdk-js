@@ -15,7 +15,7 @@ Examples use `client`, a configured `BitgenClient` ([Configuration](../configura
 
 TypeScript types of this resource, exported by the package: `AssetTicker`, `AssetFees`, `AssetNetworkType`, `AssetNetwork`, `Asset` — the constants `AssetState` (also a type) and `Asset` (the ISO codes, a value only: the `Asset` type is the model) — plus the shared `AssetRef`, `AssetInput`, `History`.
 
-## list
+## List
 
 ```
 client.asset.list(): Promise<Page<Asset>>
@@ -34,7 +34,7 @@ for (const asset of available) {
 
 Returns a page of `Asset` ([get](#get)).
 
-## get
+## Get
 
 ```
 client.asset.get(asset: AssetInput): Promise<Asset>
@@ -70,7 +70,7 @@ Returns an `Asset`:
 
 An unknown uuid or ISO code answers `404 unknown_asset`.
 
-## tickers
+## Tickers
 
 ```
 client.asset.tickers(): Promise<Page<{ iso: string, ticker: AssetTicker }>>
@@ -86,7 +86,7 @@ for (const { iso, ticker } of items) {
 
 Returns, for every asset, its `iso` and its `ticker` (`AssetTicker`): `price` and `marketcap` (in EUR), `rank` (market cap rank), `percentChange24h` (24-hour change, in %).
 
-## ticker
+## Ticker
 
 ```
 client.asset.ticker(iso: string): Promise<{ iso: string, ticker: AssetTicker, history: History }>

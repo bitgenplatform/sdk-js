@@ -1,6 +1,6 @@
 # Bank accounts
 
-Every customer has an EUR account on the BITGEN platform: a ledger that receives their bank transfers, holds the EUR balance their purchases are paid from, is credited by their sales, and pays their withdrawals to their IBAN. `client.bank` reads the account and its operations, withdraws EUR, and credits deposits.
+Every customer has an EUR account on the BITGEN platform: a **ledger** of the EUR they hold with the bank provider of your organization — the provider receives their bank transfers and pays their withdrawals to their IBAN, BITGEN keeps the account and notifies you ([Following a deposit and a withdrawal](../concepts.md#following-a-deposit-and-a-withdrawal)). The balance pays their purchases and is credited by their sales. `client.bank` reads the account and its operations, withdraws EUR, and credits deposits.
 
 Examples use `client`, a configured `BitgenClient` ([Configuration](../configuration.md)). A customer is designated by a `UserRef`: their uuid, or a model carrying it, such as the `Created` returned by `client.customer.create` ([User references](../concepts.md#user-references)). The customer must belong to your organization and be activated, otherwise the API answers `404 unknown_bank` ([Activation and identity](../concepts.md#activation-and-identity)).
 
@@ -15,7 +15,7 @@ Examples use `client`, a configured `BitgenClient` ([Configuration](../configura
 
 TypeScript types of this resource, exported by the package: `BankAccount`, `BankOperation`, `BankOperationsParams`, `BankWithdrawParams`, `BankCreditParams` — the constant `BankDirection` (also a type) — plus the shared `UserRef`, `Created`, `Amount`.
 
-## get
+## Get
 
 ```
 client.bank.get(user: UserRef): Promise<BankAccount>
@@ -42,10 +42,10 @@ Returns a `BankAccount`:
 | `message` | The wire transfer reference the customer must indicate (`BTGN` prefix) |
 | `iban`, `bank`, `bic` | The customer's bank details, `null` until set — `withdraw` can set them |
 | `balance` | EUR balance (number) |
-| `pending` | `{ in, out }` — EUR incoming not credited yet, and outgoing not confirmed yet |
+| `pending` | `{ in, out }` — `in`: reported deposits not credited yet (BITGEN processing and compliance analysis); `out`: withdrawals requested and purchase reserves, not settled yet |
 | `history` | EUR balance curve, a `History` ([Timestamps and histories](../concepts.md#timestamps-and-histories)); `{}` until the hourly computation has run for this account |
 
-## operations
+## Operations
 
 ```
 client.bank.operations(user: UserRef, params?: BankOperationsParams): Promise<Page<BankOperation>>
@@ -75,7 +75,7 @@ for (const operation of items) {
 
 Returns a page of `BankOperation`: `txId` (identifier of the ledger entry), `amount` (EUR, number), `direction` (`BankDirection.DEPOSIT`, `WITHDRAWAL`, `PURCHASE` or `SELL` — never `ALL`), `date` (epoch seconds), `info` (free label of the operation — for instance the asset bought or sold — or `null`).
 
-## withdraw
+## Withdraw
 
 ```
 client.bank.withdraw(user: UserRef, params: BankWithdrawParams): Promise<{ transaction: string }>
@@ -96,15 +96,17 @@ const { transaction } = await client.bank.withdraw('CUSTOMER_UUID', {
 const movement = await client.transaction.get(transaction)   // follow the withdrawal in the transaction journal
 ```
 
-The withdrawal goes to the customer's IBAN: the account must have bank details (`412 bank_rib_required`), a sufficient balance (`416 requested_amount_error`) and an amount above the fee (`416 amount_below_fee`). `transaction` is the uuid of the `Transaction` created for the withdrawal ([Transactions](transaction.md)).
+The withdrawal goes to the customer's IBAN: the amount is reserved in `pending.out` and debited from the balance when the provider confirms the wire; the event `bank.debited` reports it then, with `amount`, `fee` and `net` — what the customer receives ([Following a deposit and a withdrawal](../concepts.md#following-a-deposit-and-a-withdrawal)). The account must have bank details (`412 bank_rib_required`), a sufficient balance (`416 requested_amount_error`) and an amount above the fee (`416 amount_below_fee`). `transaction` identifies the withdrawal — its `Transaction` in the journal ([Transactions](transaction.md)).
 
-## credit
+![An EUR withdrawal: the reserve on the ledger, the compliance analysis, the wire from the organization account to the customer IBAN, the debit at confirmation](../media/withdrawal-flow.svg)
+
+## Credit
 
 ```
 client.bank.credit(params: BankCreditParams): Promise<Created>
 ```
 
-`credit` only applies when your organization's bank provider is **manual** — deposits are not reported to BITGEN automatically: you tell BITGEN a wire has arrived, and the customer's account is credited. With an automated provider, deposits are detected and credited automatically and you are notified by the `bank.credited` webhook ([Webhooks](webhooks.md)) — do not call `credit`: the API refuses it (`412 deposit_reported_by_provider`). The account is designated either by the customer (`user`) or by the wire transfer reference of the account (`message`).
+`credit` only applies when your organization's bank provider is **manual** — deposits are not reported to BITGEN automatically: you tell BITGEN a wire has arrived on the organization's account. The amount enters `pending.in`, goes through BITGEN's processing and the compliance analysis, and the account is credited then — `bank.credited` at that moment ([Following a deposit and a withdrawal](../concepts.md#following-a-deposit-and-a-withdrawal)). With an automated provider, deposits are detected and credited automatically and you are notified by the `bank.credited` webhook ([Webhooks](webhooks.md)) — do not call `credit`: the API refuses it (`412 deposit_reported_by_provider`). The account is designated either by the customer (`user`) or by the wire transfer reference of the account (`message`).
 
 | Parameter | Type | Description |
 |---|---|---|
@@ -112,7 +114,7 @@ client.bank.credit(params: BankCreditParams): Promise<Created>
 | `params.currency` | `'EUR'` | Optional |
 | `params.user` | `UserRef` | The customer — or `message` |
 | `params.message` | `string` | The wire transfer reference of the account (`BTGN…`) — or `user` |
-| `params.reference` | `string` | The bank's transfer reference — it makes the call idempotent: calling twice with the same reference credits once (and returns the same `uuid`) |
+| `params.reference` | `string` | The bank's transfer reference — it makes the call idempotent: calling twice with the same reference declares once (and returns the same `uuid`) |
 
 ```ts
 const { uuid } = await client.bank.credit({
@@ -122,7 +124,9 @@ const { uuid } = await client.bank.credit({
 })
 ```
 
-Returns a `Created` — the `uuid` identifying the deposit. Without `user` nor `message`, the API answers `400 bank_target_required`.
+Returns a `Created` — the `uuid` of the declared deposit: the incoming movement, not credited yet. Without `user` nor `message`, the API answers `400 bank_target_required`.
+
+![An EUR deposit: the wire to the organization account at the bank provider, its report, the matching by reference, the compliance analysis, the credit of the ledger](../media/deposit-flow.svg)
 
 ## Errors
 
@@ -150,6 +154,7 @@ In addition to the [common errors](../errors.md#common-errors):
 
 ## Related
 
+- [Following a deposit and a withdrawal](../concepts.md#following-a-deposit-and-a-withdrawal) — who holds the funds, what the ledger shows, when the events are sent
 - [Amounts](../concepts.md#amounts) — EUR amounts as strings, 2 decimals
 - [Trading](trading.md) — purchases paid from the EUR balance, sales credited to it
 - [Transactions](transaction.md) — the journal where withdrawals appear

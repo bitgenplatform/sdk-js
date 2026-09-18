@@ -15,7 +15,7 @@ Examples use `client`, a configured `BitgenClient` ([Configuration](../configura
 
 TypeScript types of this resource, exported by the package: `Wallet`, `CustodyPortfolio`, `TravelRule`, `CustodyWithdrawParams` — the constants `WalletState`, `WalletType` (also types) — plus the shared `UserRef`, `AssetRef`, `AssetInput`, `Amount`.
 
-## wallets
+## Wallets
 
 ```
 client.custody.wallets(user: UserRef): Promise<Wallet[]>
@@ -45,7 +45,7 @@ Returns the wallets without their `history`:
 | `asset` | `AssetRef`: `{ uuid, iso, label }` ([Assets](../concepts.md#assets) — compare `iso` case-insensitively) |
 | `history` | Only on `wallet`: the EUR value curve, a `History` ([Timestamps and histories](../concepts.md#timestamps-and-histories)) — `{}` on a new wallet until the curve has been computed |
 
-## wallet
+## Wallet
 
 ```
 client.custody.wallet(user: UserRef, asset: AssetInput): Promise<Wallet>
@@ -69,7 +69,7 @@ console.log(wallet.history?.d)      // EUR value over the last 24 hours — only
 
 When the customer has no wallet for this asset yet, the API **provisions** it: a deposit address is created at the custodian. The customer must be activated, not frozen (`403 account_frozen`), with a validated identity if your organization uses BITGEN's identity verification (`403 kyc_not_validated` — [Activation and identity](../concepts.md#activation-and-identity)) and no active compliance alert (`423 blocked_by_alert`). Returns the `Wallet` with its `history`.
 
-## portfolio
+## Portfolio
 
 ```
 client.custody.portfolio(user: UserRef): Promise<CustodyPortfolio>
@@ -83,7 +83,7 @@ console.log(portfolio.history.m)   // EUR value of the custody, one point per da
 
 Returns `{ uuid, type, history }` — `uuid` is the custody account of the customer, `type` is `WalletType.USER` (a customer) or `WalletType.TREASURY` (the organization) — or a flat `{ history }` at zero while the customer has no custody. Customers only: your organization's uuid is refused with `415 custody_portfolio_treasury_unsupported`.
 
-## withdraw
+## Withdraw
 
 ```
 client.custody.withdraw(user: UserRef, params: CustodyWithdrawParams): Promise<{ transaction: string | null }>

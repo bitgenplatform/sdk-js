@@ -15,7 +15,7 @@ TypeScript types of this resource, exported by the package: `CoreConfigField`, `
 
 The catalogue is managed by BITGEN. Which connectors your organization uses, and their configuration, are set in the BITGEN interface — not through the API.
 
-## list
+## List
 
 ```
 client.core.list(params?: CoreListParams): Promise<Page<Core>>
@@ -44,7 +44,7 @@ for (const provider of providers.items) {
 
 Returns the matching `Core` connectors ([get](#get)).
 
-## get
+## Get
 
 ```
 client.core.get(core: string | Core): Promise<Core>

@@ -1,3 +1,11 @@
+## [1.0.4] - 2026-09-18
+
+### Changed
+- Documentation only, no code change. Ten diagrams in `readme/media/` (shipped with the package): the states of a purchase and of a sale, the activation and identity of a customer, the receiving of a webhook delivery, the movement and the position of a staking, the lifecycle of a transaction, the path of a purchase, of a sale, of an EUR deposit and of an EUR withdrawal
+- `readme/concepts.md`: two new sections, `Following a purchase and a sale` and `Following a deposit and a withdrawal` — where the money goes, resource by resource, and what your organization reads afterwards
+- Resource pages aligned with the platform's behaviour: `trading` — from which states an order reaches `FAILED` or `PARKED`, and what happens to the money; `staking` — one movement per position, rewritten `UNSTAKE` on a full exit, the cycle of the position, what `rewards` and `unstake` change, the events of the operations journal (`validated`, `failed`, `canceled`, `reward`, `claim`, `closed`) and their `movement`; `transaction` — the lifecycle of a transaction and `credited` for incoming transactions; `bank` — the bank provider holds the funds and BITGEN keeps the ledger, a declared deposit is credited after processing and compliance analysis, a withdrawal is reserved then debited at the confirmation of the wire, `pending.in` and `pending.out`
+- Section titles of the resource pages start with a capital letter (`## Get`, `## Wallets`, `## UpdateEndpoint`…); anchors are unchanged
+
 ## [1.0.2] - 2026-09-17
 
 ### Added

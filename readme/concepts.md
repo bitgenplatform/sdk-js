@@ -102,3 +102,27 @@ Each key is a list of `[epoch seconds, value]` points: `d` covers the last 24 ho
 By default `client.customer.create` sends the customer an activation email. Until they click it, the account stays `CustomerState.CREATED` (`setup.needActivation` is `true`) and the **financial resources do not see it**: `client.bank` answers `404 unknown_bank`, `client.custody` and `client.staking` `403 org_forbidden`, `client.trading` `403 user_not_in_scope`. Only `client.customer.list` (where the customer appears as `CREATED`) and `client.customer.get` see it. An organization that handles onboarding itself creates its customers with `needActivation: false` — usable right away, no BITGEN email — and `notify: false` for no BITGEN emails at all ([Customers › create](resource/customer.md#create)).
 
 If your organization uses BITGEN's identity verification, the customer's identity (KYC for a person, KYB for a business) must be validated first — `412 owner_identity_not_validated` when reading the EUR account, `403 kyc_not_validated` on custody, trading and staking otherwise. An organization that verifies the identity of its customers by its own means has no such requirement. The verification itself is not part of the SDK; its state is `identity.state` ([Customers › Identity](resource/customer.md#identity)).
+
+![Activation and identity: from the creation of a customer to the financial resources](media/activation.svg)
+
+## Following a purchase and a sale
+
+A purchase moves money across four resources. Placing the order reserves the EUR on the customer's bank account — an operation `PURCHASE` ([Bank accounts](resource/bank.md)); the exchange of the platform executes it — `EXECUTING`, then `FILLED` with the price, the fee and the quantity received ([Trading](resource/trading.md)); the quantity is delivered to the customer's custody wallet — `DELIVERING`, then `DONE` ([Custody wallets](resource/custody.md)) — where it appears as a custody transaction `IN` ([Transactions](resource/transaction.md)). Afterwards, the order carries the result, the operations of the bank account show the debit, the journal the delivery, the wallet its new balance, and the event `trading.buy` is sent ([Webhooks](resource/webhooks.md)).
+
+![A purchase: the EUR reserved, the execution at the exchange, the delivery to the custody wallet, and what you read afterwards](media/purchase-flow.svg)
+
+A sale goes the other way. The quantity leaves the customer's custody wallet through an internal transfer to the exchange — a `silent` custody transaction `OUT` in the journal ([Custody wallets](resource/custody.md), [Transactions](resource/transaction.md)); the exchange executes it — `EXECUTING`, then `FILLED` at `executedPrice`, minus `fee` ([Trading](resource/trading.md)); the EUR received are credited on the customer's EUR account — `DONE`, an operation `SELL` and the event `bank.credited` ([Bank accounts](resource/bank.md)); the event `trading.sell` is sent ([Webhooks](resource/webhooks.md)).
+
+![A sale: the crypto moved from the custody wallet to the exchange, the execution, the EUR credited on the ledger, and what your organization reads afterwards](media/sale-flow.svg)
+
+## Following a deposit and a withdrawal
+
+The EUR of a customer are held by the bank provider of your organization, on the organization's account — one IBAN, the same for all your customers, that you give them yourself. BITGEN holds no funds: it keeps the **ledger** of each customer — `balance`, `pending`, `history`, operations ([Bank accounts](resource/bank.md)). The provider receives the wires and pays the withdrawals; you read the ledger and receive the events ([Webhooks](resource/webhooks.md)).
+
+![An EUR deposit: the wire to the organization account at the bank provider, its report, the matching by reference, the compliance analysis, the credit of the ledger](media/deposit-flow.svg)
+
+A deposit: the customer wires EUR to the organization's account with the reference `BTGN` followed by the code of their account (`message`) → the provider reports the wire to BITGEN — with a manual bank, you declare it ([credit](resource/bank.md#credit)) → BITGEN matches the reference and the amount enters `pending.in` → compliance analysis: a `BANK` `IN` transaction, `bank.transaction` (`PENDING` if an alert holds it — [Transactions](resource/transaction.md)) → `balance` credited, operation `DEPOSIT`, `bank.credited`. The credit is never immediate; without a valid reference the wire is never credited, and the compliance of your organization is notified.
+
+![An EUR withdrawal: the reserve on the ledger, the compliance analysis, the wire from the organization account to the customer IBAN, the debit at confirmation](media/withdrawal-flow.svg)
+
+A withdrawal: you request it ([Withdraw](resource/bank.md#withdraw)) — the amount is reserved in `pending.out`, `balance` untouched, `transaction` identifies the withdrawal → compliance analysis, `bank.transaction` → the provider wires from the organization's account to the customer's IBAN → at confirmation, `balance` debited, operation `WITHDRAWAL`, `bank.debited` with `amount`, `fee` and `net`. If it fails, the reserve is released.

@@ -1,10 +1,12 @@
 # Staking
 
-Staking places the crypto of a customer with a staking provider to earn rewards. A **provider** is a `CoreType.STAKING` connector of the platform, one per asset (`figment_sol`, `bitgen_eth`…), with its own rate, minimum deposit and lock-up periods. Staking is driven by **movements** — a request to stake, unstake, withdraw or claim rewards — each attached to a **position**, the capital placed with the provider. `client.staking` lists the providers, opens a position, follows the movements, claims rewards, unstakes, and reads the operations and the EUR portfolio of a customer.
+Staking places the crypto of a customer with a staking provider to earn rewards. A **provider** is a `CoreType.STAKING` connector of the platform, one per asset (`figment_sol`, `bitgen_eth`…), with its own rate, minimum deposit and lock-up periods. Staking is driven by a **movement** — the request to stake, rewritten into the exit when the position is left entirely — attached to a **position**, the capital placed with the provider. `client.staking` lists the providers, opens a position, follows the movements, claims rewards, unstakes, and reads the operations and the EUR portfolio of a customer.
 
 Two distinct identifiers: `stake` returns the uuid of a **movement**, which `get`, `list` and `movements` handle; the **position** it opened is `movement.staking.uuid`, which `rewards` and `unstake` take.
 
 Examples use `client`, a configured `BitgenClient` ([Configuration](../configuration.md)). A customer is designated by a `UserRef`: their uuid, or a model carrying it, such as the `Created` returned by `client.customer.create` ([User references](../concepts.md#user-references)). A customer who is not an activated member of your organization is refused with `403 org_forbidden` ([Activation and identity](../concepts.md#activation-and-identity)).
+
+![Staking: the movement returned by Stake, its states, and the position it opens](../media/staking-position.svg)
 
 ## Methods
 
@@ -22,7 +24,7 @@ Examples use `client`, a configured `BitgenClient` ([Configuration](../configura
 
 TypeScript types of this resource, exported by the package: `StakingPosition`, `StakingMovement`, `StakingOperation`, `StakingPortfolio`, `StakeParams`, `StakingListParams`, `StakingAmountParams` — the constants `StakingMovementState`, `StakingMovementKind`, `StakingPositionState` (also types) — plus the shared `UserRef`, `UserSummary`, `OrganizationSummary`, `AssetRef`, `AssetInput`, `Created`, `Amount`, `PageParams`, `Core`, `CoreRef`.
 
-## providers
+## Providers
 
 ```
 client.staking.providers(asset?: AssetInput): Promise<Page<Core>>
@@ -59,7 +61,7 @@ Returns the `CoreType.STAKING` connectors, not paginated. The `uuid` or the `nam
 
 Periods are written `<unit>@<n>` with the unit `H`, `D`, `W`, `M` or `Y` — `D@3` is 3 days.
 
-## stake
+## Stake
 
 ```
 client.staking.stake(user: UserRef, params: StakeParams): Promise<Created>
@@ -89,7 +91,7 @@ console.log(movement.staking.uuid)          // the position, for `rewards` and `
 
 The amount is moved from the customer's custody wallet to the deposit address of the provider through an internal transfer: the errors of a custody withdrawal can surface ([Custody wallets › Errors](custody.md#errors)), in particular `416 requested_amount_error` for an insufficient crypto balance. Returns a `Created` — the uuid of the **movement**.
 
-## list
+## List
 
 ```
 client.staking.list(params?: StakingListParams): Promise<Page<StakingMovement>>
@@ -100,7 +102,7 @@ The movements of your organization, in every state.
 | Parameter | Type | Description |
 |---|---|---|
 | `params.user` | `UserRef` | Only the movements of this customer (uuid or model; unknown → `404 unknown_user`) |
-| `params.direction` | `StakingMovementKind` | Only this kind of movement: `StakingMovementKind.STAKE`, `UNSTAKE`, `WITHDRAW` or `REWARD` — absent, all |
+| `params.direction` | `StakingMovementKind` | Only this kind of movement: `StakingMovementKind.STAKE`, `UNSTAKE`, `WITHDRAW` or `REWARD` — absent, all. A movement is `STAKE`, then `UNSTAKE` after a full exit; `WITHDRAW` and `REWARD` match no movement — a partial exit and a claim create none — and give an empty page |
 | `params.offset`, `params.limit` | `number` | [Pagination](../concepts.md#pagination) |
 
 ```ts
@@ -111,7 +113,7 @@ const { count, items } = await client.staking.list({ user: 'CUSTOMER_UUID', dire
 
 Returns a page of `StakingMovement` ([get](#get)).
 
-## movements
+## Movements
 
 ```
 client.staking.movements(params?: StakingListParams): Promise<Page<StakingMovement>>
@@ -125,7 +127,7 @@ const pending = await client.staking.movements({ user: 'CUSTOMER_UUID' })
 
 Returns a page of `StakingMovement` ([get](#get)).
 
-## get
+## Get
 
 ```
 client.staking.get(movement: string | StakingMovement): Promise<StakingMovement>
@@ -147,8 +149,8 @@ Returns a `StakingMovement`:
 | Field | Description |
 |---|---|
 | `uuid` | The movement |
-| `state` | `StakingMovementState.REQUESTED`, `PENDING`, `COMPLETED`, `FAILED` or `CANCELED` |
-| `kind` | `StakingMovementKind.STAKE`, `UNSTAKE`, `WITHDRAW` or `REWARD` |
+| `state` | `StakingMovementState.REQUESTED`, `PENDING`, `COMPLETED`, `FAILED` or `CANCELED` — the cycle is below the table |
+| `kind` | `StakingMovementKind.STAKE` from the request, `UNSTAKE` once a full exit is requested — the same movement, rewritten; `WITHDRAW` and `REWARD` are values of the `direction` filter and of the operations journal, carried by no movement |
 | `provider` | The `name` of the staking connector (`figment_sol`) |
 | `amount` | The quantity of the movement, as a string |
 | `createdAt`, `updatedAt` | Epoch seconds |
@@ -157,9 +159,11 @@ Returns a `StakingMovement`:
 | `asset` | `AssetRef`: `{ uuid, iso, label }` |
 | `organization` | `OrganizationSummary`: `{ uuid, state, name }`, or `null` |
 
+A position has a single movement, whose uuid — the one returned by `stake` — never changes. The movement goes `STAKE` `REQUESTED` → `PENDING` (the deposit is on its way; the `amount` of the position becomes the net quantity received) → `COMPLETED` (the position is `ENABLED`); `REQUESTED` → `FAILED` when the transfer fails, `PENDING` → `CANCELED` when the platform cancels the request — the position is `FAILED` in both cases. A full exit (`unstake`) rewrites the same movement `UNSTAKE` `REQUESTED` (the position is `UNSTAKING`), then `COMPLETED` when the platform closes the position (`CLOSED`). A partial exit and a claim leave the movement untouched: the position stays `ENABLED`, its `amount` and `data.rewards` decrease.
+
 An unknown movement, or one outside your organization, answers `404 unknown_staking_movement`.
 
-## rewards
+## Rewards
 
 ```
 client.staking.rewards(position: string | StakingPosition, params?: StakingAmountParams): Promise<void>
@@ -178,9 +182,9 @@ await client.staking.rewards(movement.staking)                      // all the r
 await client.staking.rewards('POSITION_UUID', { amount: '0.01' })   // part of them, by uuid
 ```
 
-The amount is deducted from the position immediately; the transfer is executed by compliance. Without rewards to claim the API answers `425 no_rewards`; a partial amount below the minimum of the provider, `422 amount_below_minimum`. The API answers with an empty body: the promise resolves with `undefined`.
+The amount is deducted from the position immediately; the transfer is executed by compliance. No movement is created or changed: `data.rewards` of the position decreases, and the event `staking.claimed` reports the claim. Without rewards to claim the API answers `425 no_rewards`; a partial amount below the minimum of the provider, `422 amount_below_minimum`. The API answers with an empty body: the promise resolves with `undefined`.
 
-## unstake
+## Unstake
 
 ```
 client.staking.unstake(position: string | StakingPosition, params?: StakingAmountParams): Promise<void>
@@ -199,9 +203,9 @@ await client.staking.unstake('POSITION_UUID', { amount: '1' })   // partial exit
 await client.staking.unstake(movement.staking)                   // full exit — the position, by model
 ```
 
-The amount is deducted from the position immediately; the transfer is executed by compliance. A full exit ignores the minimums; a partial amount below the minimum of the provider answers `422 amount_below_minimum`. The position must be past the lock-up period of the provider (`425 deposit_locked_period_not_elapsed`) and its staking movement completed (`412 staking_movement_not_completed`). The API answers with an empty body: the promise resolves with `undefined`.
+The amount is deducted from the position immediately; the transfer is executed by compliance. A full exit — no `amount`, or the whole position — rewrites the movement of the position: `kind` `UNSTAKE`, `state` `REQUESTED`, and the position is `UNSTAKING`; follow it with `get` and the uuid returned by `stake`; the event `staking.status` reports `UNSTAKING`, then `CLOSED` once the platform closes the position. A partial exit touches no movement: the position stays `ENABLED` with a reduced `amount`, and `staking.status` reports `WITHDRAWAL`. A full exit ignores the minimums; a partial amount below the minimum of the provider answers `422 amount_below_minimum`. The position must be past the lock-up period of the provider (`425 deposit_locked_period_not_elapsed`) and its staking movement completed (`412 staking_movement_not_completed`). The API answers with an empty body: the promise resolves with `undefined`.
 
-## operations
+## Operations
 
 ```
 client.staking.operations(user: UserRef, params?: PageParams): Promise<Page<StakingOperation>>
@@ -219,9 +223,9 @@ for (const operation of items) {
 }
 ```
 
-Returns a page of `StakingOperation`: `txId` (journal entry id), `movement` (uuid of the movement, `null` for a daily reward), `asset` (iso), `kind` (`StakingMovementKind.STAKE`, `UNSTAKE`, `WITHDRAW` or `REWARD`), `amount` (asset units, as a string), `price` (EUR price of the asset at that time), `value` (EUR value), `event` (`created`, `pending`, `validated`, `failed`, `reward`, `claimed`, `unstake`, `closed` — other values may appear), `provider` (connector name), `date` (epoch seconds). An unknown customer, or one outside your organization, answers `404 unknown_staking`.
+Returns a page of `StakingOperation`: `txId` (journal entry id), `movement` (uuid of the movement of the position — `reward` and `claim` entries carry it too — or `null`), `asset` (iso), `kind` (`StakingMovementKind.STAKE`, `UNSTAKE`, `WITHDRAW` or `REWARD` — `REWARD` for the `reward` and `claim` entries), `amount` (asset units, as a string), `price` (EUR price of the asset at that time), `value` (EUR value), `event` (`validated`, `failed`, `canceled`, `reward`, `claim` or `closed` — other values may appear), `provider` (connector name), `date` (epoch seconds). An unknown customer, or one outside your organization, answers `404 unknown_staking`.
 
-## portfolio
+## Portfolio
 
 ```
 client.staking.portfolio(user: UserRef): Promise<StakingPortfolio>

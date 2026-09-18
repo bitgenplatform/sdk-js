@@ -1,4 +1,4 @@
-# @bitgen/sdk — v1.0.3
+# @bitgen/sdk — v1.0.4
 
 Official Node.js SDK for the BITGEN API v4 — server-side, TypeScript, ESM and CommonJS, no runtime dependency.
 Install it with `npm install @bitgen/sdk` (Node.js 20 or later).
@@ -19,7 +19,7 @@ console.log(account.balance)  // EUR balance of the customer
 - [Installation](readme/installation.md) — Node.js 20+, ESM, CommonJS, TypeScript
 - [Quick start](readme/quick-start.md) — a customer, their EUR account, a wallet, a purchase
 - [Configuration](readme/configuration.md) — credentials, environments, custom host, timeout
-- [Concepts](readme/concepts.md) — user references, amounts, pagination, assets, activation, constants
+- [Concepts](readme/concepts.md) — user references, amounts, pagination, assets, activation, constants, the flows of a purchase, a sale, a deposit and a withdrawal
 - [Errors](readme/errors.md) — `BitgenError`, error codes, rejected promises
 
 Resources, in the order of an integration:

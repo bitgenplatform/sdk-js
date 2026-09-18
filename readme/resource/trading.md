@@ -15,7 +15,7 @@ Examples use `client`, a configured `BitgenClient` ([Configuration](../configura
 
 TypeScript types of this resource, exported by the package: `Order`, `OrderUser`, `OrderOrganization`, `TradingOrderParams`, `TradingListParams` — the constants `OrderState`, `OrderSide`, `TradingDirection` (also types) — plus the shared `UserRef`, `AssetRef`, `AssetInput`, `Amount`, `Page`.
 
-## buy
+## Buy
 
 ```
 client.trading.buy(user: UserRef, params: TradingOrderParams): Promise<{ tunnel: string, state: OrderState }>
@@ -42,7 +42,9 @@ console.log(order.state === OrderState.DONE, order.received, order.executedPrice
 
 The API reserves `amount` on the customer's EUR account (`423 insufficient_funds` if the balance is insufficient, `404 unknown_bank` without an EUR account) and creates the order. `tunnel` is its uuid, `state` its initial state.
 
-## sell
+![A purchase: REGISTERED, EXECUTING, FILLED, DELIVERING, DONE — FAILED and PARKED](../media/order-buy.svg)
+
+## Sell
 
 ```
 client.trading.sell(user: UserRef, params: TradingOrderParams): Promise<{ tunnel: string, state: OrderState }>
@@ -68,7 +70,9 @@ console.log(order.received)   // EUR credited to the bank account once the order
 
 The sale takes the crypto from the customer's custody wallet through an internal transfer to the exchange: the errors of a custody withdrawal can surface ([Custody wallets › Errors](custody.md#errors)), in particular `416 requested_amount_error` for an insufficient crypto balance and `503 custody_vault_unavailable`.
 
-## get
+![A sale: REGISTERED, TRANSFERRING, DEPOSITED, EXECUTING, FILLED, DONE — FAILED and PARKED](../media/order-sell.svg)
+
+## Get
 
 ```
 client.trading.get(order: string | Order): Promise<Order>
@@ -89,7 +93,7 @@ Returns an `Order`:
 | Field | Description |
 |---|---|
 | `uuid` | The order — the `tunnel` of `buy` / `sell` |
-| `state` | A purchase goes `OrderState.REGISTERED` → `EXECUTING` → `FILLED` → `DELIVERING` → `DONE`; a sale `REGISTERED` → `TRANSFERRING` → `DEPOSITED` → `EXECUTING` → `FILLED` → `DONE`. `PARKED`: executed but nothing was received (terminal); `FAILED` |
+| `state` | A purchase goes `OrderState.REGISTERED` → `EXECUTING` → `FILLED` → `DELIVERING` → `DONE`; a sale `REGISTERED` → `TRANSFERRING` → `DEPOSITED` → `EXECUTING` → `FILLED` → `DONE`. `FAILED` and `PARKED` are terminal, reached before anything of the target asset was received: `FAILED` from `REGISTERED` or `EXECUTING` for a purchase (the EUR reserve is released), from `REGISTERED`, `TRANSFERRING` or `EXECUTING` for a sale (the crypto goes back to the wallet); `PARKED` from `EXECUTING` only — executed, but nothing of the target asset was received; the BITGEN team takes over |
 | `side` | `OrderSide.BUY` or `OrderSide.SELL` |
 | `amount` | What was asked, as a string: EUR for a purchase (`"25.00"`), a crypto quantity for a sale |
 | `reference` | The idempotency key given, or `null` |
@@ -103,7 +107,7 @@ Returns an `Order`:
 
 An order outside your organization answers `404 unknown_order`.
 
-## list
+## List
 
 ```
 client.trading.list(params?: TradingListParams): Promise<Page<Order>>
@@ -164,3 +168,4 @@ In addition to the [common errors](../errors.md#common-errors), and the custody 
 - [Custody wallets](custody.md) — the wallets sales take crypto from
 - [Assets catalogue](asset.md) — which assets are `AVAILABLE`, their decimals
 - [Webhooks](webhooks.md) — `trading.buy`, `trading.sell`
+- [Following a purchase and a sale](../concepts.md#following-a-purchase-and-a-sale) — where the EUR, the execution, the delivery and the credit show up, resource by resource

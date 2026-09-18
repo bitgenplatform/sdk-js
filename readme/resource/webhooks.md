@@ -4,6 +4,8 @@ BITGEN pushes the events of your organization — a customer created, an identit
 
 Examples use `client`, a configured `BitgenClient` ([Configuration](../configuration.md)). Wherever the API expects your organization, the SDK sends the `scope` of the client.
 
+![Receiving a delivery: the POST, its verification, the 2xx answer and the retries](../media/webhook-delivery.svg)
+
 ## Methods
 
 | Method | What it does | Returns |
@@ -22,7 +24,7 @@ Examples use `client`, a configured `BitgenClient` ([Configuration](../configura
 
 TypeScript types of this resource, exported by the package: `WebhookType`, `Subscriber`, `WebhookSubscriptions`, `DeliveryLog`, `WebhookEvent`, `VerifyInput` — the constants `WebhookEventName`, `SubscriberState` (also types) — plus the shared `Created`, `PageParams`.
 
-## activate
+## Activate
 
 ```
 client.webhooks.activate(params: { endpoint: string }): Promise<void>
@@ -40,7 +42,7 @@ const { secret } = await client.webhooks.list()   // the initial secret is read 
 
 Activation generates the secret of your organization. `activate` does not return it: the API returns the current secret in `list()` (`secret` field, next to `endpoint` and the subscriptions). Once active, a second activation answers `429 webhook_security_already_enabled`. The API answers with an empty body: the promise resolves with `undefined`.
 
-## updateEndpoint
+## UpdateEndpoint
 
 ```
 client.webhooks.updateEndpoint(params: { endpoint: string }): Promise<void>
@@ -56,7 +58,7 @@ await client.webhooks.updateEndpoint({ endpoint: 'https://example.com/bitgen/v2'
 
 Before activation, the API answers `404 unknown_webhook_security`. The promise resolves with `undefined`.
 
-## regenerate
+## Regenerate
 
 ```
 client.webhooks.regenerate(): Promise<void>
@@ -70,7 +72,7 @@ const { secret } = await client.webhooks.list()   // 2. the new secret — confi
 
 `regenerate()` creates a new secret but does not return it: the API returns the current secret in `list()` (`secret` field, next to `endpoint` and the subscriptions). The deliveries are signed with the new one from then on, the previous one stops validating immediately. Before activation, the API answers `404 unknown_webhook_security`. The promise resolves with `undefined`.
 
-## list
+## List
 
 ```
 client.webhooks.list(params?: { includeArchived?: boolean }): Promise<WebhookSubscriptions>
@@ -100,7 +102,7 @@ Returns a `WebhookSubscriptions`:
 
 Before activation, the API answers `404 unknown_webhook_security`.
 
-## subscribe
+## Subscribe
 
 ```
 client.webhooks.subscribe(event: string | WebhookType): Promise<Created>
@@ -130,7 +132,7 @@ Returns a `Created` — the uuid of the subscription, for `archive`, `reactivate
 
 The `WebhookEventName` constant carries these names — `WebhookEventName.CUSTODY_SENT` for `custody.sent`, `USER_IDENTITY_STEP_VALIDATED` for `user.identity.step.validated`… — and as a type it also accepts any other string, since the catalogue may grow ([Constants](../concepts.md#constants)).
 
-## archive
+## Archive
 
 ```
 client.webhooks.archive(subscriber: string | Subscriber): Promise<void>
@@ -144,7 +146,7 @@ await client.webhooks.archive('SUBSCRIBER_UUID')
 
 The subscription becomes `SubscriberState.ARCHIVED`: the event is no longer delivered. An unknown subscription answers `404 unknown_webhook_subscriber`. The promise resolves with `undefined`.
 
-## reactivate
+## Reactivate
 
 ```
 client.webhooks.reactivate(subscriber: string | Subscriber): Promise<void>
@@ -158,7 +160,7 @@ await client.webhooks.reactivate('SUBSCRIBER_UUID')
 
 The subscription becomes `SubscriberState.ENABLED` again. An unknown subscription answers `404 unknown_webhook_subscriber`. The promise resolves with `undefined`.
 
-## logs
+## Logs
 
 ```
 client.webhooks.logs(subscriber: string | Subscriber, params?: PageParams): Promise<Page<DeliveryLog>>
@@ -180,7 +182,7 @@ for (const delivery of items) {
 
 Returns a page of `DeliveryLog`: `date` (epoch seconds), `webhook` (the event name), `url` (the endpoint called), `status` (`SENT` or `FAILED` for that attempt), `http_code` (the status your endpoint answered, or `null`), `duration_ms` (or `null`), `attempts` (attempt number), `payload` (the delivered body), `error` (failure reason, `null` on success).
 
-## catalog
+## Catalog
 
 ```
 client.webhooks.catalog(): Promise<Page<WebhookType>>
@@ -198,7 +200,7 @@ for (const type of items) {
 
 Returns every event of the catalogue, `SubscriberState.ARCHIVED` ones included, as `WebhookType`: `uuid`, `state` (`SubscriberState.ENABLED` or `SubscriberState.ARCHIVED`), `name`, `label` (its display names, a raw JSON string `{"fr": "…", "en": "…"}`), `data` (internal, a raw JSON string).
 
-## catalogItem
+## CatalogItem
 
 ```
 client.webhooks.catalogItem(webhook: string | WebhookType): Promise<WebhookType>
@@ -212,7 +214,7 @@ const type = await client.webhooks.catalogItem('WEBHOOK_UUID')
 
 Returns one `WebhookType`; an unknown uuid answers `404 unknown_webhook`.
 
-## verify
+## Verify
 
 ```
 client.webhooks.verify(input: VerifyInput): Promise<WebhookEvent>

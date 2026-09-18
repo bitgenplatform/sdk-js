@@ -4,6 +4,8 @@ A customer is an end user of your organization on the BITGEN platform: a person 
 
 Examples use `client`, a configured `BitgenClient` ([Configuration](../configuration.md)). A customer is designated by a `UserRef`: their uuid, or a model carrying it — the `Created` returned by `create`, a `Customer` of `list`, an `Account` of `get` ([User references](../concepts.md#user-references)).
 
+![Activation and identity: from the creation of a customer to the financial resources](../media/activation.svg)
+
 ## Methods
 
 | Method | What it does | Returns |
@@ -15,7 +17,7 @@ Examples use `client`, a configured `BitgenClient` ([Configuration](../configura
 
 TypeScript types of this resource, exported by the package: `KycIdentity`, `KybIdentity`, `Identity`, `CustomerAccount`, `CustomerClient`, `CustomerSetup`, `CollaboratorLink`, `ManagerLink`, `CustomerAlert`, `CustomerBusiness`, `Customer`, `AccountAddress`, `Account`, `CreateCustomerParams`, `CustomerListParams`, `UpdateCustomerParams` — the constants `Locale`, `CustomerState`, `IdentityState`, `IdentityMode`, `OrganizationCategory` (also types) — plus the shared `UserRef`, `Created`.
 
-## create
+## Create
 
 ```
 client.customer.create(params: CreateCustomerParams): Promise<Created>
@@ -59,7 +61,7 @@ With `needActivation: false` the account is usable right away and BITGEN sends n
 
 When the email already belongs to an active account whose KYC is validated, that account is **attached** to your organization instead of being created. An active account without a validated KYC cannot be attached (`412 user_not_attachable`), an account already attached to another organization is refused (`409 user_already_assigned`), and so is an account still being created, for 15 minutes (`409 account_unavailable`).
 
-## list
+## List
 
 ```
 client.customer.list(params?: CustomerListParams): Promise<Page<Customer>>
@@ -99,7 +101,7 @@ Returns a page of `Customer`:
 | `collaborations.manager` | Attachments where this account manages other people — always empty for a customer (`mandate`, `mandatedUntil`: CRM data, not needed for an integration)                                                                                                                                                                                                                                                                                                                       |
 | `alert` | Active compliance alerts: `uuid`, `state` (`OPEN`, `DECLARATED`, `CONFIRMED`), `severity` (`SUCCESS`, `WARNING`, `CRITICAL`), `sources` (the observations behind the alert — analysis data)                                                                                                                                                                                                                                                                                   |
 
-## get
+## Get
 
 ```
 client.customer.get(user: UserRef): Promise<Account>
@@ -160,7 +162,7 @@ if (identity.mode === IdentityMode.KYC) {
 }
 ```
 
-## update
+## Update
 
 ```
 client.customer.update(user: UserRef, params: UpdateCustomerParams): Promise<void>
