@@ -1,4 +1,4 @@
-# @bitgen/sdk — v1.0.4
+# @bitgen/sdk — v1.0.5
 
 Official Node.js SDK for the BITGEN API v4 — server-side, TypeScript, ESM and CommonJS, no runtime dependency.
 Install it with `npm install @bitgen/sdk` (Node.js 20 or later).
