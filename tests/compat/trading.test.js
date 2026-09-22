@@ -74,6 +74,7 @@ test('trading errors → BitgenError { status, code }', async () => {
   const cases = [
     [422, 'invalid_asset'], [416, 'invalid_amount'], [416, 'amount_below_commission'], [412, 'price_unavailable'],
     [412, 'trading_not_enabled'], [403, 'user_not_in_scope'], [423, 'insufficient_funds'], [423, 'blocked_by_alert'], [404, 'unknown_bank'],
+    [429, 'daily_buy_limit_exceeded'],   // sandbox only: daily purchase cap per customer
   ]
   for (const [status, code] of cases) {
     const failing = await startMockApi({ '/trading': error(status, code) })
