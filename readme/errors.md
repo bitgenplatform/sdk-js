@@ -60,7 +60,7 @@ The errors any call can answer. Each resource page lists its own codes.
 | `403` | `expired_api_key` | The key has expired |
 | `403` | `forbidden_permission` | The key does not carry the permission for this call — contact BITGEN |
 | `400` | `required_index_missing::<field>` | A mandatory field is missing or empty |
-| `404` | `unknown_<resource>` | The target does not exist — `unknown_user`, `unknown_asset`, `unknown_bank`… — or the API does not reveal it |
+| `404` | `unknown_<resource>` | The target does not exist **or is outside your organization** — `unknown_user`, `unknown_asset`, `unknown_bank`… The two cases are deliberately indistinguishable, including when you search a customer by email |
 | `422` | `invalid_<param>` | A boolean filter (`includeClosed`, `includeRevoked`, `includeArchived`) is not a boolean value ([Query booleans](concepts.md#query-booleans)) |
 | `423` | `blocked_by_alert` | The customer is under an active compliance alert (each resource page lists its `423` codes, with `account_frozen` and the lock codes) |
 

@@ -85,18 +85,22 @@ client.bank.withdraw(user: UserRef, params: BankWithdrawParams): Promise<{ trans
 |---|---|---|
 | `params.amount` | `Amount` | EUR, rounded to 2 decimals ([Amounts](../concepts.md#amounts)) |
 | `params.iban`, `params.bank`, `params.bic` | `string` | Optional: update the customer's bank details before the withdrawal |
+| `params.idempotencyKey` | `string` | Optional: 64 characters max, unique per customer — replaying the same key returns the same withdrawal |
 
 ```ts
 const { transaction } = await client.bank.withdraw('CUSTOMER_UUID', {
   amount: '50.00',
-  iban: 'FR76…',      // optional, sets or replaces the customer's bank details
+  iban: 'FR76…',                      // optional, sets or replaces the customer's bank details
   bic: 'BNPAFRPP',
+  idempotencyKey: 'WITHDRAW-REF-42',  // optional, makes the call safe to replay
 })
-
-const movement = await client.transaction.get(transaction)   // follow the withdrawal in the transaction journal
 ```
 
-The withdrawal goes to the customer's IBAN: the amount is reserved in `pending.out` and debited from the balance when the provider confirms the wire; the event `bank.debited` reports it then, with `amount`, `fee` and `net` — what the customer receives ([Following a deposit and a withdrawal](../concepts.md#following-a-deposit-and-a-withdrawal)). The account must have bank details (`412 bank_rib_required`), a sufficient balance (`416 requested_amount_error`) and an amount above the fee (`416 amount_below_fee`). `transaction` identifies the withdrawal — its `Transaction` in the journal ([Transactions](transaction.md)).
+The withdrawal goes to the customer's IBAN: the amount is reserved in `pending.out` and debited from the balance when the provider confirms the wire; the event `bank.debited` reports it then, with `amount`, `fee` and `net` — what the customer receives ([Following a deposit and a withdrawal](../concepts.md#following-a-deposit-and-a-withdrawal)). The account must have bank details (`412 bank_rib_required`), a sufficient balance (`416 requested_amount_error`) and an amount above the fee (`416 amount_below_fee`). Bank details sent with the call are written to the account even when the withdrawal is then refused.
+
+`idempotencyKey` makes the call safe to replay: the same key with the same amount reserves the amount once and returns the same `transaction`, the same key with a different amount is refused (`412 idempotency_amount_mismatch`), and an invalid key answers `422 invalid_idempotency_key`. A key identifies one withdrawal for good — replayed after the withdrawal has failed, it returns that withdrawal instead of starting a new one.
+
+`transaction` identifies the withdrawal. Its `Transaction` in the journal ([Transactions](transaction.md)) is opened by the compliance analysis, within a minute of the call: `transaction.get()` answers `404 unknown_transaction` until then, and reads it with this same identifier once it is opened.
 
 ![An EUR withdrawal: the reserve on the ledger, the compliance analysis, the wire from the organization account to the customer IBAN, the debit at confirmation](../media/withdrawal-flow.svg)
 
@@ -106,7 +110,7 @@ The withdrawal goes to the customer's IBAN: the amount is reserved in `pending.o
 client.bank.credit(params: BankCreditParams): Promise<Created>
 ```
 
-`credit` only applies when your organization's bank provider is **manual** — deposits are not reported to BITGEN automatically: you tell BITGEN a wire has arrived on the organization's account. The amount enters `pending.in`, goes through BITGEN's processing and the compliance analysis, and the account is credited then — `bank.credited` at that moment ([Following a deposit and a withdrawal](../concepts.md#following-a-deposit-and-a-withdrawal)). On a provider that **takes the declaration and reports the deposit itself** — the test bank of the sandbox environment — the call answers `201` with an empty body, no `uuid`: the incoming movement appears in `pending.in` a second later, once the provider has reported it, and the `bank.transaction` / `bank.credited` events follow as for any deposit. With an automated provider that refuses declarations, deposits are detected and credited automatically and you are notified by the `bank.credited` webhook ([Webhooks](webhooks.md)) — do not call `credit`: the API refuses it (`412 deposit_reported_by_provider`). The account is designated either by the customer (`user`) or by the wire transfer reference of the account (`message`).
+`credit` only applies when your organization's bank provider is **manual** — deposits are not reported to BITGEN automatically: you tell BITGEN a wire has arrived on the organization's account. The amount enters `pending.in`, goes through BITGEN's processing and the compliance analysis, and the account is credited then — `bank.credited` at that moment ([Following a deposit and a withdrawal](../concepts.md#following-a-deposit-and-a-withdrawal)). On a provider that **takes the declaration and reports the deposit itself**, the call answers `201` with an empty body, no `uuid`: the incoming movement appears in `pending.in` a second later, once the provider has reported it, and the `bank.transaction` / `bank.credited` events follow as for any deposit. With an automated provider that refuses declarations, deposits are detected and credited automatically and you are notified by the `bank.credited` webhook ([Webhooks](webhooks.md)) — do not call `credit`: the API refuses it (`412 deposit_reported_by_provider`). The account is designated either by the customer (`user`) or by the wire transfer reference of the account (`message`).
 
 | Parameter | Type | Description |
 |---|---|---|
@@ -114,7 +118,7 @@ client.bank.credit(params: BankCreditParams): Promise<Created>
 | `params.currency` | `'EUR'` | Optional |
 | `params.user` | `UserRef` | The customer — or `message` |
 | `params.message` | `string` | The wire transfer reference of the account (`BTGN…`) — or `user` |
-| `params.reference` | `string` | The bank's transfer reference — it makes the call idempotent: calling twice with the same reference declares once (and returns the same `uuid`) |
+| `params.reference` | `string` | The bank's transfer reference — it identifies one deposit and one only. Calling twice with the same reference **and the same amount** declares once and returns the same `uuid`; calling again with a **different amount** is refused (`412 reference_amount_mismatch`). Your references are private to your organization. 218 characters at most |
 
 ```ts
 const { uuid } = await client.bank.credit({
@@ -144,6 +148,8 @@ In addition to the [common errors](../errors.md#common-errors):
 | `412` | `bank_rib_required` | `withdraw` without an IBAN or a bank on the account |
 | `412` | `ramp_not_enabled` | The `CoreType.RAMP` (bank) connector of your organization is not enabled |
 | `412` | `deposit_reported_by_provider` | `credit` on an automated bank provider that refuses declarations: deposits are reported by the provider itself |
+| `412` | `reference_amount_mismatch` | The same `reference` was already declared for a different amount |
+| `416` | `reference_too_long` | The `reference` is longer than 218 characters |
 | `412` | `trading_not_enabled` | The `CoreType.TRADING` connector of your organization is not enabled |
 | `416` | `requested_amount_error` | Insufficient balance |
 | `416` | `amount_below_fee` | The amount does not cover the fee |

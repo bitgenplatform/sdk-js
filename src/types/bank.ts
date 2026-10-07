@@ -46,6 +46,8 @@ export interface BankWithdrawParams {
   iban?: string
   bank?: string
   bic?: string
+  /** ≤ 64 characters, unique per customer: replaying returns the same withdrawal */
+  idempotencyKey?: string
 }
 
 export interface BankCreditParams {

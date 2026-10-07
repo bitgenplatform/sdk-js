@@ -164,6 +164,12 @@ export interface CreateCustomerParams {
     needActivation?: boolean
     /** Default `true`: the customer receives BITGEN's emails (newsletter). `false`: none */
     notify?: boolean
+    /**
+     * Default `true`: the customer may sign in to the BITGEN web application. `false`: they cannot, and the
+     * activation answers only their `uuid` instead of a session — for an organization that drives everything
+     * through the API with its own interface.
+     */
+    canLogin?: boolean
   }
   /** `manager` = uuid of the collaborator of the organization who follows this customer — the customer is created in the key's organization */
   group: { manager: string }

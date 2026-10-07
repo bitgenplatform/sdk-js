@@ -52,8 +52,8 @@ test('bank.withdraw → PUT /bank/{user}, amount always sent as a string', async
   assert.equal(api.last().method, 'PUT')
   assert.equal(api.last().url, `/bank/${UUID}`)
   assert.deepEqual(api.lastBody(), { amount: '50' })
-  await client.bank.withdraw({ uuid: UUID }, { amount: '12.34', iban: 'FR7630006000011234567890189', bic: 'X' })
-  assert.deepEqual(api.lastBody(), { amount: '12.34', iban: 'FR7630006000011234567890189', bic: 'X' })
+  await client.bank.withdraw({ uuid: UUID }, { amount: '12.34', iban: 'FR7630006000011234567890189', bic: 'X', idempotencyKey: 'w-42' })
+  assert.deepEqual(api.lastBody(), { amount: '12.34', iban: 'FR7630006000011234567890189', bic: 'X', idempotencyKey: 'w-42' })
 })
 
 test('bank.credit → POST /bank, user resolved, 201 { uuid }', async () => {

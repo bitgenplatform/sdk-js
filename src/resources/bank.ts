@@ -25,7 +25,11 @@ export class BankResource {
     return await this.http.get(`/bank/${pathSegment(resolveUuid(user), 'user')}/operations`, { ...params })
   }
 
-  /** EUR withdrawal to the customer's IBAN — `iban` / `bank` / `bic` update the bank details first */
+  /**
+   * EUR withdrawal to the customer's IBAN — `iban` / `bank` / `bic` update the bank details first,
+   * `idempotencyKey` makes the call safe to replay. `transaction` identifies the withdrawal: its line in
+   * the journal is opened by the compliance analysis, within a minute of the call.
+   */
   async withdraw(user: UserRef, params: BankWithdrawParams): Promise<{ transaction: string }> {
     return await this.http.put(`/bank/${pathSegment(resolveUuid(user), 'user')}`, { ...params, amount: amount(params.amount) })
   }
