@@ -28,7 +28,7 @@ for (const wallet of wallets) {
   console.log(wallet.asset.iso, wallet.balance, wallet.address)   // 'ETH' '0.5' '0xabc…'
 }
 
-const treasury = await client.custody.wallets('YOUR_SCOPE_UUID')   // the treasury wallets of your organization
+const treasury = await client.custody.wallets('YOUR_ORGANIZATION_SCOPE')   // the treasury wallets of your organization
 ```
 
 Returns the wallets without their `history`:

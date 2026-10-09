@@ -6,7 +6,7 @@ A `BitgenClient` is built once per API key and reused: it holds the credentials,
 import { BitgenClient, Env } from '@bitgen/sdk'
 
 const client = new BitgenClient({
-  scope: 'YOUR_SCOPE_UUID',
+  scope: 'YOUR_ORGANIZATION_SCOPE',
   apiKey: 'YOUR_API_KEY',
   env: Env.PRODUCTION,   // default
   timeout: 30,           // seconds, default 30
@@ -39,7 +39,7 @@ To reach the API through another hostname — a container, a tunnel — give `ho
 
 ```ts
 const client = new BitgenClient({
-  scope: 'YOUR_SCOPE_UUID',
+  scope: 'YOUR_ORGANIZATION_SCOPE',
   apiKey: 'YOUR_API_KEY',
   host: 'my-hostname',   // bare hostname: no scheme, port or path
   port: 8080,             // default 80

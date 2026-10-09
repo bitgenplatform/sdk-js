@@ -8,9 +8,9 @@ Create the client once, then run a first journey: create a customer, read their 
 import { BitgenClient, Env } from '@bitgen/sdk'
 
 const client = new BitgenClient({
-  scope: 'YOUR_SCOPE_UUID',   // uuid of the organization that owns the key
+  scope: 'YOUR_ORGANIZATION_SCOPE',   // uuid of the organization that owns the key
   apiKey: 'YOUR_API_KEY',
-  env: Env.SANDBOX,           // Env.PRODUCTION by default
+  env: Env.SANDBOX,                   // Env.PRODUCTION by default
 })
 ```
 

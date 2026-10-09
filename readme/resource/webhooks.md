@@ -242,7 +242,7 @@ Answer with a 2xx status: a delivery that does not get one is retried 4 times (a
 import { createServer } from 'node:http'
 import { BitgenClient, BitgenError, WebhookEventName } from '@bitgen/sdk'
 
-const client = new BitgenClient({ scope: 'YOUR_SCOPE_UUID', apiKey: 'YOUR_API_KEY' })
+const client = new BitgenClient({ scope: 'YOUR_ORGANIZATION_SCOPE', apiKey: 'YOUR_API_KEY' })
 const { secret } = await client.webhooks.list()
 
 createServer((req, res) => {

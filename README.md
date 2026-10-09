@@ -1,4 +1,4 @@
-# @bitgen/sdk — v1.0.7
+# @bitgen/sdk — v1.0.8
 
 Official Node.js SDK for the BITGEN API v4 — server-side, TypeScript, ESM and CommonJS, no runtime dependency.
 Install it with `npm install @bitgen/sdk` (Node.js 20 or later).
@@ -7,9 +7,9 @@ Install it with `npm install @bitgen/sdk` (Node.js 20 or later).
 import { BitgenClient, Env } from '@bitgen/sdk'
 
 const client = new BitgenClient({
-  scope: 'YOUR_SCOPE_UUID',   // uuid of the organization that owns the key
+  scope: 'YOUR_ORGANIZATION_SCOPE',   // uuid of the organization that owns the key
   apiKey: 'YOUR_API_KEY',
-  env: Env.SANDBOX,           // Env.PRODUCTION by default
+  env: Env.SANDBOX,                   // Env.PRODUCTION by default
 })
 
 const account = await client.bank.get('CUSTOMER_UUID')
